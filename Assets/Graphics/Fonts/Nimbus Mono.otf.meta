@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 993a31793928f4e78b7be638dbafea62
+timeCreated: 1493456386
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Nimbus Mono
+  fontNames:
+  - Nimbus Mono
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
