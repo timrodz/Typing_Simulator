@@ -1,6 +1,6 @@
 fileFormatVersion: 2
-guid: 031557c2270714ae6ab309aff33325c3
-timeCreated: 1493456386
+guid: a4f3e84e3e486f94baf621759f7aaa54
+timeCreated: 1495262959
 licenseType: Free
 TrueTypeFontImporter:
   serializedVersion: 4
@@ -9,9 +9,9 @@ TrueTypeFontImporter:
   characterSpacing: 0
   characterPadding: 1
   includeFontData: 1
-  fontName: Courier Prime
+  fontName: monobit
   fontNames:
-  - Courier Prime
+  - monobit
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0
