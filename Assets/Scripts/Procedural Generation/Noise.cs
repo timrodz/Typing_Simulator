@@ -68,7 +68,7 @@ public static class Noise {
 
         // Normalize the noisemap to produce values between 0 and 1 again
         // This is because the texture draws values between those points
-        for (int y = 0; y < mapHeight; y++) {
+        for (int y = 0; y < mapHeight; y++) { 
 
             for (int x = 0; x < mapWidth; x++) {
 

@@ -5,19 +5,19 @@ using UnityEngine;
 
 public class Typewriter : MonoBehaviour {
 
-    [HeaderAttribute("References")]
+    [HeaderAttribute ("References")]
     [SerializeField] private SoundManager soundManager;
-    [SerializeField] private TextMeshProUGUI inputBox;
+    [SerializeField] private TextMeshProUGUI inputText;
     [SerializeField] private TextMeshProUGUI decorationText;
 
     [SpaceAttribute]
-    [HeaderAttribute("Input Box Constrains")]
+    [HeaderAttribute ("Input Box Constrains")]
     [SerializeField] private TMP_FontAsset font;
     [SerializeField] private Color textColor = Color.white;
     [SerializeField] private Color styleColor = Color.white;
     [SerializeField] private char cursorIcon = '_';
     [SerializeField] private int characterLimit = 16;
-    [SerializeField] private int monospaceValue = 20;
+    [SerializeField] private int monospaceValue = 12;
     [SerializeField] private float characterDeleteDelay = 0.1f;
 
     // Text deletion
@@ -32,52 +32,60 @@ public class Typewriter : MonoBehaviour {
 
     // Allowances
     [SpaceAttribute]
-    [HeaderAttribute("Key constrains")]
+    [HeaderAttribute ("Key constrains")]
     [SerializeField] private bool allowEveryKey = false;
     [SerializeField] private bool allowAlphabeticKeys = true;
     [SerializeField] private bool allowNumericKeys = true;
 
-    [SerializeField] private bool canAddCharacter = true;
-    private float characterResetTimer = 0;
-    [SerializeField] private int textLength;
-    [SerializeField] private int textPosition;
+    private int textLength;
+    private int textPosition;
+    private int startIndex;
+
+    [SpaceAttribute]
+    [HeaderAttribute ("Text logger")]
+    [SerializeField] private TextMeshProUGUI logText;
 
     // Use this for initialization
-    void Start() {
+    void Start () {
 
         if (!soundManager) {
-            soundManager = FindObjectOfType<SoundManager>();
+            soundManager = FindObjectOfType<SoundManager> ();
         }
 
-        if (!inputBox) {
-            inputBox = transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+        if (!inputText) {
+            inputText = transform.GetChild (2).GetComponent<TextMeshProUGUI> ();
         }
 
         if (!decorationText) {
-            decorationText = transform.GetChild(1).GetComponent<TextMeshProUGUI>();
+            decorationText = transform.GetChild (3).GetComponent<TextMeshProUGUI> ();
+        }
+
+        if (!logText) {
+            logText = transform.GetChild (4).GetComponent<TextMeshProUGUI> ();
         }
 
         // Set the fonts
-        inputBox.font = font;
+        inputText.font = font;
         decorationText.font = font;
 
         string decorText = decorationText.text;
-        decorationText.text = "<#" + Utils.ColorToHex(styleColor) + ">" + decorText;
+        decorationText.text = "<#" + Utils.ColorToHex (styleColor) + ">" + decorText;
 
         // Empty the text
-        inputBox.text = "<mspace=" + monospaceValue + ">";
+        inputText.text = "<mspace=" + monospaceValue + ">" + "<#" + Utils.ColorToHex (textColor) + ">";
+
+        logText.text = "<mspace=" + monospaceValue + ">";
+
+        startIndex = inputText.text.Length;
 
     }
 
     // Update is called once per frame
-    void Update() {
+    void Update () {
 
         // Check for most key presses
-        if (Input.anyKeyDown && (!Input.GetKey(KeyCode.Backspace) && !Input.GetKey(KeyCode.Return) && !Input.GetKey(KeyCode.Escape))) {
+        if (Input.anyKeyDown && (!Input.GetKey (KeyCode.Backspace) && !Input.GetKey (KeyCode.Return) && !Input.GetKey (KeyCode.Escape))) {
             textPosition = Input.inputString.Length - 1;
-
-            // if (!canAddCharacter)
-            // return;
 
             if (textPosition > Input.inputString.Length || textPosition < 0) {
                 return;
@@ -85,92 +93,107 @@ public class Typewriter : MonoBehaviour {
 
             char characterPressed = Input.inputString[textPosition];
 
-            if (!allowEveryKey) {
+            bool isValidKey = ValidateKey (characterPressed);
 
-                bool isValidKey = ValidateKey(characterPressed);
+            if (isValidKey) {
 
-                if (isValidKey) {
-
-                    AddCharacter(characterPressed);
-
-                }
-
-            } else {
-
-                AddCharacter(characterPressed);
+                AddCharacter (characterPressed);
 
             }
 
         } else {
 
-            if (Input.GetKey(KeyCode.Backspace)) {
+            if (Input.GetKeyDown (KeyCode.Return)) {
+
+                EnterMessage ();
+
+            } else if (Input.GetKey (KeyCode.Backspace)) {
                 backspaceHoldTime += Time.deltaTime;
-                DeleteLastCharacter();
-            } else if (Input.GetKeyUp(KeyCode.Backspace)) {
+                DeleteLastCharacter ();
+            } else if (Input.GetKeyUp (KeyCode.Backspace)) {
                 isDeletingLastCharacter = false;
                 backspaceHoldTime = 0;
             } else {
                 if (!isShowingBlinkCursor && textLength < characterLimit) {
-                    StartCoroutine(ShowCursor());
+                    StartCoroutine (ShowCursor ());
                 }
             }
 
         }
 
-        if (!canAddCharacter) {
-            characterResetTimer += Time.deltaTime;
-        }
+    }
 
-        if (characterResetTimer > 0.1f) {
-            canAddCharacter = true;
-            characterResetTimer = 0;
-        }
+    /// <summary>
+    /// Enter message for processing
+    /// </summary>
+    private void EnterMessage () {
+
+        RemoveCursorAndSetStateTo (false, true);
+
+        if (inputText.text.Length <= startIndex)
+            return;
+
+        textLength = 0;
+
+        logText.text += inputText.text.Substring (startIndex, inputText.text.Length - startIndex) + "\n";
+
+        inputText.text = "<mspace=" + monospaceValue + ">" + "<#" + Utils.ColorToHex (textColor) + ">";
 
     }
 
-    bool ValidateKey(char key) {
+    private bool ValidateKey (char key) {
 
-        if (allowAlphabeticKeys) {
+        if (allowEveryKey) {
 
-            // Uppercase check
-            char c = 'A';
-
-            for (int i = 0; i < 26; i++) {
-
-                if (key == (c + i))
-                    return true;
-
-            }
-
-            // Lowercase
-            c = 'a';
-
-            for (int i = 0; i < 26; i++) {
-
-                if (key == (c + i))
-                    return true;
-
-            }
-
-            if (key == ' ')
+            if (key < 128) {
                 return true;
+            }
 
-        }
+        } else {
 
-        if (allowNumericKeys) {
+            if (allowAlphabeticKeys) {
 
-            // Uppercase check
-            char c = '1';
+                // Uppercase check
+                char c = 'A';
 
-            for (int i = 0; i < 9; i++) {
+                for (int i = 0; i < 26; i++) {
 
-                if (key == (c + i))
+                    if (key == (c + i))
+                        return true;
+
+                }
+
+                // Lowercase
+                c = 'a';
+
+                for (int i = 0; i < 26; i++) {
+
+                    if (key == (c + i))
+                        return true;
+
+                }
+
+                if (key == ' ')
                     return true;
 
             }
 
-            if (key == '0')
-                return true;
+            if (allowNumericKeys) {
+
+                // Uppercase check
+                char c = '1';
+
+                for (int i = 0; i < 9; i++) {
+
+                    if (key == (c + i))
+                        return true;
+
+                }
+
+                if (key == '0')
+                    return true;
+
+            }
 
         }
 
@@ -178,61 +201,60 @@ public class Typewriter : MonoBehaviour {
 
     }
 
-    void AddCharacter(char character) {
+    private void AddCharacter (char character) {
 
-        RemoveCursorAndSetStateTo(false, true);
+        RemoveCursorAndSetStateTo (false, true);
 
         if (textLength >= characterLimit) {
             return;
         }
 
-        soundManager.PlayKeyboardClick();
+        soundManager.PlayKeyboardClick ();
 
         // TODO Check if the text exceeds the size of the bounding box
-        inputBox.text += "<#" + Utils.ColorToHex(textColor) + ">" + character;
+        // inputText.text += "<#" + Utils.ColorToHex (textColor) + ">" + character;
+        inputText.text += character;
 
         textLength++;
 
-        canAddCharacter = false;
-
     }
 
-    void DeleteLastCharacter() {
+    private void DeleteLastCharacter () {
 
         if (isDeletingLastCharacter) {
             return;
         }
 
-        StopCoroutine("ShowCursor");
-        RemoveCursorAndSetStateTo(true, true);
-        StartCoroutine(DeleteDelay());
+        StopCoroutine ("ShowCursor");
+        RemoveCursorAndSetStateTo (true, true);
+        StartCoroutine (DeleteDelay ());
 
     }
 
-    private IEnumerator DeleteDelay() {
+    private IEnumerator DeleteDelay () {
 
-        string text = inputBox.text;
+        string text = inputText.text;
 
         int length = text.Length - 1;
 
-        if (inputBox.text.Length >= ("<mspace=" + monospaceValue + ">").Length + 1) {
+        if (inputText.text.Length >= startIndex + 1) {
 
             if (length >= 0) {
 
                 isDeletingLastCharacter = true;
 
-                soundManager.PlayDelete();
+                soundManager.PlayDelete ();
 
-                text = text.Remove(length - 9);
+                text = text.Remove (length);
 
-                inputBox.text = text;
+                inputText.text = text;
 
                 textLength--;
 
                 if (backspaceHoldTime < 1) {
-                    yield return new WaitForSeconds(characterDeleteDelay);
+                    yield return new WaitForSeconds (characterDeleteDelay);
                 } else {
-                    yield return new WaitForSeconds(0.05f);
+                    yield return new WaitForSeconds (0.05f);
                 }
 
                 isDeletingLastCharacter = false;
@@ -251,50 +273,37 @@ public class Typewriter : MonoBehaviour {
 
     }
 
-    private IEnumerator PlayDeleteSound() {
+    private IEnumerator ShowCursor () {
 
-        if (isPlayingDeleteSound) {
-            yield break;
-        }
+        RemoveCursorAndSetStateTo (true, false);
 
-        isPlayingDeleteSound = true;
-        yield return new WaitForSeconds(backspaceSoundDelay);
-        soundManager.PlayDelete();
-        isPlayingDeleteSound = false;
-
-    }
-
-    private IEnumerator ShowCursor() {
-
-        RemoveCursorAndSetStateTo(true, false);
-
-        inputBox.text += "<#" + Utils.ColorToHex(styleColor) + ">" + cursorIcon;
+        inputText.text += "<#" + Utils.ColorToHex (styleColor) + ">" + cursorIcon;
         isShowingBlinkCursor = true;
 
-        yield return new WaitForSeconds(blinkCursorShowDelay);
+        yield return new WaitForSeconds (blinkCursorShowDelay);
 
-        RemoveCursorAndSetStateTo(true, false);
+        RemoveCursorAndSetStateTo (true, false);
 
         // This was causing it to delete the last character, it should only delete the cursor that was added
         // textMesh.text = textMesh.text.Remove (textMesh.text.Length - 1);
 
-        yield return new WaitForSeconds(blinkCursorShowDelay);
+        yield return new WaitForSeconds (blinkCursorShowDelay);
         isShowingBlinkCursor = false;
 
     }
 
-    private void RemoveCursorAndSetStateTo(bool keepCursorState, bool shouldStopAllCoroutines) {
+    private void RemoveCursorAndSetStateTo (bool keepCursorState, bool shouldStopAllCoroutines) {
 
-        int cursorIndex = inputBox.text.IndexOf("<#" + Utils.ColorToHex(styleColor) + ">" + cursorIcon);
-        int cursorLength = ("<#" + Utils.ColorToHex(styleColor) + ">" + cursorIcon).Length;
+        int cursorIndex = inputText.text.IndexOf ("<#" + Utils.ColorToHex (styleColor) + ">" + cursorIcon);
+        int cursorLength = ("<#" + Utils.ColorToHex (styleColor) + ">" + cursorIcon).Length;
 
         if (cursorIndex != -1) {
 
             if (shouldStopAllCoroutines) {
-                StopAllCoroutines();
+                StopAllCoroutines ();
             }
 
-            inputBox.text = inputBox.text.Remove(cursorIndex, cursorLength);
+            inputText.text = inputText.text.Remove (cursorIndex, cursorLength);
             isShowingBlinkCursor = keepCursorState;
 
         }
