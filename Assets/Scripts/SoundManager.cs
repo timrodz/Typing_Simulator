@@ -11,20 +11,22 @@ public class SoundManager : MonoBehaviour {
 
 	[HeaderAttribute("Audio clips")]
 	public List<AudioClip> keyboardTypingSoundList = new List<AudioClip>();
-	public AudioClip backspaceSound;
+	public AudioClip deleteSound;
+	public AudioClip deleteInvalidSound;
 
 	public void PlayKeyboardClick() {
 
 		int randomClickSound = Random.Range(0, keyboardTypingSoundList.Count);
-
 		keyboardSFX.PlayOneShot(keyboardTypingSoundList[randomClickSound]);
 
 	}
 
-	public void PlayBackspace() {
-
-		keyboardSFX.PlayOneShot(backspaceSound);
-
+	public void PlayDelete() {
+		keyboardSFX.PlayOneShot(deleteSound);
+	}
+	
+	public void PlayDeleteInvalid() {
+		keyboardSFX.PlayOneShot(deleteInvalidSound);
 	}
 
 }
