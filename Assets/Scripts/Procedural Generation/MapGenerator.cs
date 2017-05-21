@@ -27,6 +27,12 @@ public class MapGenerator : MonoBehaviour {
 
     public TerrainType[] regions;
 
+    void Start() {
+
+        GenerateMap();
+
+    }
+
     /// <summary>
     /// Update is called every frame, if the MonoBehaviour is enabled.
     /// </summary>
