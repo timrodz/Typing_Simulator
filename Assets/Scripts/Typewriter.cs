@@ -5,7 +5,8 @@ using UnityEngine;
 
 public class Typewriter : MonoBehaviour {
 
-    [HeaderAttribute ("References")]
+    [HeaderAttribute("References")]
+    [SerializeField] private CommandListener commandListener;
     [SerializeField] private SoundManager soundManager;
     [SerializeField] private TextMeshProUGUI inputText;
     [SerializeField] private TextMeshProUGUI decorationText;
@@ -17,14 +18,12 @@ public class Typewriter : MonoBehaviour {
     [SerializeField] private Color styleColor = Color.white;
     [SerializeField] private char cursorIcon = '_';
     [SerializeField] private int characterLimit = 16;
-    [SerializeField] private int monospaceValue = 12;
+    public int monospaceValue = 12;
     [SerializeField] private float characterDeleteDelay = 0.1f;
 
     // Text deletion
-    [SerializeField] private float backspaceSoundDelay = 0.1f;
     private bool isDeletingLastCharacter = false;
     private float backspaceHoldTime = 0;
-    private bool isPlayingDeleteSound = false;
 
     // Blink cursor
     [SerializeField] private float blinkCursorShowDelay = 0.5f;
@@ -33,20 +32,21 @@ public class Typewriter : MonoBehaviour {
     // Allowances
     [SpaceAttribute]
     [HeaderAttribute ("Key constrains")]
-    [SerializeField] private bool allowEveryKey = false;
+    [SerializeField] private bool allowAllKeys = false;
     [SerializeField] private bool allowAlphabeticKeys = true;
     [SerializeField] private bool allowNumericKeys = true;
+    [SerializeField] private bool isTypingAllowed = true;
 
     private int textLength;
     private int textPosition;
     private int startIndex;
 
-    [SpaceAttribute]
-    [HeaderAttribute ("Text logger")]
-    [SerializeField] private TextMeshProUGUI logText;
-
     // Use this for initialization
     void Start () {
+
+        if (!commandListener) {
+            commandListener = FindObjectOfType<CommandListener>(); 
+        }
 
         if (!soundManager) {
             soundManager = FindObjectOfType<SoundManager> ();
@@ -59,11 +59,6 @@ public class Typewriter : MonoBehaviour {
         if (!decorationText) {
             decorationText = transform.GetChild (3).GetComponent<TextMeshProUGUI> ();
         }
-
-        if (!logText) {
-            logText = transform.GetChild (4).GetComponent<TextMeshProUGUI> ();
-        }
-
         // Set the fonts
         inputText.font = font;
         decorationText.font = font;
@@ -74,14 +69,15 @@ public class Typewriter : MonoBehaviour {
         // Empty the text
         inputText.text = "<mspace=" + monospaceValue + ">" + "<#" + Utils.ColorToHex (textColor) + ">";
 
-        logText.text = "<mspace=" + monospaceValue + ">";
-
         startIndex = inputText.text.Length;
 
     }
 
     // Update is called once per frame
     void Update () {
+
+        if (!isTypingAllowed)
+            return;
 
         // Check for most key presses
         if (Input.anyKeyDown && (!Input.GetKey (KeyCode.Backspace) && !Input.GetKey (KeyCode.Return) && !Input.GetKey (KeyCode.Escape))) {
@@ -130,20 +126,24 @@ public class Typewriter : MonoBehaviour {
 
         RemoveCursorAndSetStateTo (false, true);
 
+        // Make sure we're not adding empty text
         if (inputText.text.Length <= startIndex)
             return;
 
         textLength = 0;
 
-        logText.text += inputText.text.Substring (startIndex, inputText.text.Length - startIndex) + "\n";
+        string finalText = inputText.text.Substring(startIndex, inputText.text.Length - startIndex);
 
+        // Reset the text
         inputText.text = "<mspace=" + monospaceValue + ">" + "<#" + Utils.ColorToHex (textColor) + ">";
+
+        commandListener.InterpretCommand(finalText);
 
     }
 
     private bool ValidateKey (char key) {
 
-        if (allowEveryKey) {
+        if (allowAllKeys) {
 
             if (key < 128) {
                 return true;
@@ -212,7 +212,6 @@ public class Typewriter : MonoBehaviour {
         soundManager.PlayKeyboardClick ();
 
         // TODO Check if the text exceeds the size of the bounding box
-        // inputText.text += "<#" + Utils.ColorToHex (textColor) + ">" + character;
         inputText.text += character;
 
         textLength++;
@@ -308,6 +307,10 @@ public class Typewriter : MonoBehaviour {
 
         }
 
+    }
+
+    public void AllowTyping(bool isTypingAllowed) {
+        this.isTypingAllowed = isTypingAllowed;
     }
 
 }
